@@ -41,7 +41,7 @@ Outputs:
       Ref: vpc
   vpcSecurityGroup:
     Description: vpc security group
-    Value:
+    Value: 
       Ref: instanceSecurityGroup
   instanceRole:
     Description: Instance Role
@@ -49,7 +49,7 @@ Outputs:
       Ref: instanceRole
   FileSystemId:
     Description: FSx Lustre FS ID
-    Value: !Ref S3LinkedLustreFS
+    Value: !Ref S3LinkedLustreFS 
   S3Endpoint:
     Description: VPC Endpoint for S3
     Value: !Ref S3Endpoint
@@ -78,13 +78,14 @@ Parameters:
      Type: String
      Default: 's3://ee-assets-prod-us-east-1/modules/75e5dde6cf204eedb24191ad8240656f/v1/coco_dataset'
      Description: Public S3 bucket for coco dataset
+  
 
 Resources:
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
         BucketName: !Sub 'sagemaker-${AWS::Region}-${AWS::AccountId}'
-
+        
   instanceRole:
     Description: Instance Role for Sagemaker and FsxLustre
     Properties:
@@ -107,7 +108,7 @@ Resources:
         - 'arn:aws:iam::aws:policy/IAMFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonFSxFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess'
-      RoleName: "tf2-sm-ddp"
+      RoleName: "tf2-sm-ddp2"
     Type: "AWS::IAM::Role"
 
   instanceSecurityGroup:
@@ -140,7 +141,7 @@ Resources:
         - CidrIp: 0.0.0.0/0
           FromPort: 443
           IpProtocol: tcp
-          ToPort: 443
+          ToPort: 443 
         - CidrIp: 0.0.0.0/0
           FromPort: 80
           IpProtocol: tcp
@@ -173,15 +174,15 @@ Resources:
         - CidrIp: 0.0.0.0/0
           FromPort: 22
           IpProtocol: tcp
-          ToPort: 22
+          ToPort: 22 
         - CidrIp: 0.0.0.0/0
           FromPort: 443
           IpProtocol: tcp
-          ToPort: 443
+          ToPort: 443 
         - CidrIp: 0.0.0.0/0
           FromPort: 80
           IpProtocol: tcp
-          ToPort: 80
+          ToPort: 80 
         - CidrIp: 0.0.0.0/0
           FromPort: 7592
           IpProtocol: tcp
@@ -196,7 +197,11 @@ Resources:
 
   privateSubnet:
     Properties:
-      AvailabilityZone: !Sub ${AWS::Region}c
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs:
+            Ref: AWS::Region
       CidrBlock:
         Fn::FindInMap:
         - CidrMappings
@@ -208,7 +213,7 @@ Resources:
       VpcId:
         Ref: vpc
     Type: AWS::EC2::Subnet
-
+    
   privateRouteTable:
     DependsOn:
       - vpc
@@ -269,13 +274,13 @@ Resources:
               ls -al $FILE
               echo "-----Sync of coco dataset from S3 public bucket----"
               ##sync
-              aws s3 sync ${PublicS3Bucket}/train s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/train/
-              aws s3 sync ${PublicS3Bucket}/model s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/model/
-              aws s3 sync ${PublicS3Bucket}/annotations s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/annotations/
-              cd $FILE
-              aws s3 cp ${PublicS3Bucket}/tf2-mask-rcnn-ddp2.tar.gz ./tf2-mask-rcnn-ddp2.tar.gz 
-              docker image load -i tf2-mask-rcnn-ddp2.tar.gz
-
+              nohup aws s3 sync ${PublicS3Bucket}/train s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/train/ &
+              nohup aws s3 sync ${PublicS3Bucket}/model s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/model/ &
+              nohup aws s3 sync ${PublicS3Bucket}/annotations s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/annotations/ &
+              #cd $FILE
+              #nohup aws s3 cp ${PublicS3Bucket}/tf2-mask-rcnn-ddp2.tar.gz ./tf2-mask-rcnn-ddp2.tar.gz &
+              #docker image load -i tf2-mask-rcnn-ddp2.tar.gz
+                    
   NotebookInstance:
     DependsOn:
       - S3Bucket
@@ -285,12 +290,12 @@ Resources:
       NotebookInstanceName: !Ref NotebookName
       DirectInternetAccess: Enabled
       SubnetId: !Ref privateSubnet
-      SecurityGroupIds:
+      SecurityGroupIds: 
         - !Ref instanceSecurityGroup
       RoleArn: !GetAtt instanceRole.Arn
       VolumeSizeInGB: !Ref VolumeSize
       LifecycleConfigName: !GetAtt NotebookLifecycle.NotebookInstanceLifecycleConfigName
-
+  
   S3LinkedLustreFS:
     DependsOn:
       - instanceSecurityGroup
@@ -313,7 +318,7 @@ Resources:
         DataCompressionType: "NONE"
         ImportPath: !Sub s3://sagemaker-${AWS::Region}-${AWS::AccountId}
         ExportPath: !Sub s3://sagemaker-${AWS::Region}-${AWS::AccountId}/.
-
+  
   S3Endpoint:
     DependsOn:
       - vpc
@@ -332,3 +337,4 @@ Resources:
         - !Ref privateRouteTable
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
       VpcId: !Ref vpc
+        
