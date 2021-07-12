@@ -273,7 +273,7 @@ Resources:
               aws s3 sync ${PublicS3Bucket}/model s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/model/
               aws s3 sync ${PublicS3Bucket}/annotations s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/annotations/
               cd $FILE
-              aws s3 cp s3://ee-assets-prod-us-east-1/modules/c5aa386d46c943e09881270b6d30b1d7/v2/docker_image/tf2-mask-rcnn-ddp2.tar.gz ./tf2-mask-rcnn-ddp2.tar.gz
+              aws s3 cp ${PublicS3Bucket}/tf2-mask-rcnn-ddp2.tar.gz ./tf2-mask-rcnn-ddp2.tar.gz 
               docker image load -i tf2-mask-rcnn-ddp2.tar.gz
 
   NotebookInstance:
