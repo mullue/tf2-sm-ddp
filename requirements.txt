@@ -1,0 +1,10 @@
+Cython
+matplotlib
+opencv-python-headless
+mpi4py
+Pillow
+pytest
+pyyaml
+pybind11
+pycocotools
+git+https://github.com/NVIDIA/dllogger.git
