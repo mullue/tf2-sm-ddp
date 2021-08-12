@@ -90,15 +90,16 @@ Conditions:
     
 Resources:
   attachGateway:
-      DependsOn:
-        - vpc
-        - internetGateway
-      Properties:
-        InternetGatewayId:
-          Ref: internetGateway
-        VpcId:
-          Ref: vpc
+    DependsOn:
+      - vpc
+      - internetGateway
+    Properties:
+      InternetGatewayId:
+        Ref: internetGateway
+      VpcId:
+        Ref: vpc
     Type: 'AWS::EC2::VPCGatewayAttachment'
+    
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Condition: CreateS3Bucket
@@ -234,8 +235,8 @@ Resources:
     Type: AWS::EC2::Subnet
   
   internetGateway:
-      DependsOn:
-        - vpc
+    DependsOn:
+      - vpc
     Type: 'AWS::EC2::InternetGateway'
     
   privateRouteTable:
@@ -261,16 +262,16 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     
   privateRoute:
-      DependsOn:
-        - privateRouteTable
-        - internetGateway
-        - attachGateway
-      Properties:
-        DestinationCidrBlock: 0.0.0.0/0
-        GatewayId:
-          Ref: internetGateway
-        RouteTableId:
-          Ref: privateRouteTable
+    DependsOn:
+      - privateRouteTable
+      - internetGateway
+      - attachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: internetGateway
+      RouteTableId:
+        Ref: privateRouteTable
     Type: 'AWS::EC2::Route'
     
   vpc:
