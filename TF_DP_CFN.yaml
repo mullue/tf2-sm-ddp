@@ -7,7 +7,6 @@ Mappings:
       CIDR: 10.0.0.0/16
     private-subnet:
       CIDR: 10.0.2.0/24
-
 Metadata:
   Author:
     Description: Deep Engines Team
@@ -90,15 +89,16 @@ Conditions:
     
 Resources:
   attachGateway:
-      DependsOn:
-        - vpc
-        - internetGateway
-      Properties:
-        InternetGatewayId:
-          Ref: internetGateway
-        VpcId:
-          Ref: vpc
+    DependsOn:
+      - vpc
+      - internetGateway
+    Properties:
+      InternetGatewayId:
+        Ref: internetGateway
+      VpcId:
+        Ref: vpc
     Type: 'AWS::EC2::VPCGatewayAttachment'
+    
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Condition: CreateS3Bucket
@@ -215,6 +215,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
 
   privateSubnet:
+    DependsOn: attachGateway
     Properties:
       AvailabilityZone:
         Fn::Select:
@@ -226,16 +227,17 @@ Resources:
         - CidrMappings
         - private-subnet
         - CIDR
+      MapPublicIpOnLaunch: true
       Tags:
       - Key: Name
         Value: private subnet
       VpcId:
         Ref: vpc
     Type: AWS::EC2::Subnet
-  
+      
   internetGateway:
-      DependsOn:
-        - vpc
+    DependsOn:
+      - vpc
     Type: 'AWS::EC2::InternetGateway'
     
   privateRouteTable:
@@ -259,18 +261,18 @@ Resources:
       SubnetId:
         Ref: privateSubnet
     Type: AWS::EC2::SubnetRouteTableAssociation
-    
-  privateRoute:
-      DependsOn:
-        - privateRouteTable
-        - internetGateway
-        - attachGateway
-      Properties:
-        DestinationCidrBlock: 0.0.0.0/0
-        GatewayId:
-          Ref: internetGateway
-        RouteTableId:
-          Ref: privateRouteTable
+     
+  publicRoute:
+    DependsOn:
+      - privateRouteTable
+      - internetGateway
+      - attachGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: internetGateway
+      RouteTableId:
+        Ref: privateRouteTable
     Type: 'AWS::EC2::Route'
     
   vpc:
@@ -325,7 +327,6 @@ Resources:
     Properties:
       InstanceType: !Ref NotebookInstanceType
       NotebookInstanceName: !Ref NotebookName
-      DirectInternetAccess: Enabled
       SubnetId: !Ref privateSubnet
       SecurityGroupIds: 
         - !Ref instanceSecurityGroup
