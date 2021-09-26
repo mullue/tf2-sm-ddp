@@ -7,66 +7,6 @@ Mappings:
       CIDR: 10.0.0.0/16
     private-subnet:
       CIDR: 10.0.2.0/24
-  RegionMap: 
-    us-east-1: 
-      datascience: "arn:aws:sagemaker:us-east-1:081325390199:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:us-east-1:663277389841:image/sagemaker-data-wrangler-1.0"
-    us-east-2:
-      datascience: "arn:aws:sagemaker:us-east-2:429704687514:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:us-east-2:415577184552:image/sagemaker-data-wrangler-1.0"      
-    us-west-1: 
-      datascience: "arn:aws:sagemaker:us-west-1:742091327244:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:us-west-1:926135532090:image/sagemaker-data-wrangler-1.0"
-    us-west-2: 
-      datascience: "arn:aws:sagemaker:us-west-2:236514542706:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:us-west-2:174368400705:image/sagemaker-data-wrangler-1.0"
-    af-south-1:
-      datascience: "arn:aws:sagemaker:af-south-1:559312083959:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:af-south-1:143210264188:image/sagemaker-data-wrangler-1.0"    
-    ap-east-1:
-      datascience: "arn:aws:sagemaker:ap-east-1:493642496378:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ap-east-1:707077482487:image/sagemaker-data-wrangler-1.0"
-    ap-south-1:
-      datascience: "arn:aws:sagemaker:ap-south-1:394103062818:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ap-south-1:089933028263:image/sagemaker-data-wrangler-1.0"  
-    ap-northeast-2:
-      datascience: "arn:aws:sagemaker:ap-northeast-2:806072073708:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ap-northeast-2:131546521161:image/sagemaker-data-wrangler-1.0"
-    ap-southeast-1:
-      datascience: "arn:aws:sagemaker:ap-southeast-1:492261229750:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ap-southeast-1:119527597002:image/sagemaker-data-wrangler-1.0"      
-    ap-southeast-2:
-      datascience: "arn:aws:sagemaker:ap-southeast-2:452832661640:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ap-southeast-2:422173101802:image/sagemaker-data-wrangler-1.0"
-    ap-northeast-1: 
-      datascience: "arn:aws:sagemaker:ap-northeast-1:102112518831:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ap-northeast-1:649008135260:image/sagemaker-data-wrangler-1.0"
-    ca-central-1:
-      datascience: "arn:aws:sagemaker:ca-central-1:310906938811:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:ca-central-1:557239378090:image/sagemaker-data-wrangler-1.0"
-    eu-central-1: 
-      datascience: "arn:aws:sagemaker:eu-central-1:936697816551:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:eu-central-1:024640144536:image/sagemaker-data-wrangler-1.0"
-    eu-west-1:
-      datascience: "arn:aws:sagemaker:eu-west-1:470317259841:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:eu-west-1:245179582081:image/sagemaker-data-wrangler-1.0"
-    eu-west-2:
-      datascience: "arn:aws:sagemaker:eu-west-2:712779665605:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:eu-west-2:894491911112:image/sagemaker-data-wrangler-1.0"
-    eu-west-3:
-      datascience: "arn:aws:sagemaker:eu-west-3:615547856133:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:eu-west-3:807237891255:image/sagemaker-data-wrangler-1.0"
-    eu-north-1:
-      datascience: "arn:aws:sagemaker:eu-north-1:243637512696:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:eu-north-1:054986407534:image/sagemaker-data-wrangler-1.0"
-    eu-south-1:
-      datascience: "arn:aws:sagemaker:eu-south-1:488287956546:image/sagemaker-data-wrangler-1.0"
-      datawrangler: "arn:aws:sagemaker:eu-south-1:592751261982:image/datascience-1.0"
-    sa-east-1:
-      datascience: "arn:aws:sagemaker:sa-east-1:782484402741:image/datascience-1.0"
-      datawrangler: "arn:aws:sagemaker:sa-east-1:424196993095:image/sagemaker-data-wrangler-1.0"
-
-
 Metadata:
   Author:
     Description: Deep Engines Team
@@ -112,18 +52,8 @@ Outputs:
   S3Endpoint:
     Description: VPC Endpoint for S3
     Value: !Ref S3Endpoint
-  SageMakerStudioDomainId:
-    Description: SageMaker Studio domain id
-    Value: !GetAtt SageMakerStudioDomain.DomainId
-  UserProfileName:
-    Description: SageMaker user profile name
-    Value: !Ref UserProfileName
 
 Parameters:
-  DomainName:
-    Type: String
-  UserProfileName:
-    Type: String
   sourceCidr:
     Default: 0.0.0.0/0
     Description: Optional - CIDR/IP range for access
@@ -152,37 +82,10 @@ Parameters:
     AllowedValues: ["True", "False"]
     Default: "True"
     Description: Select True if you want to create S3 bucket, else select False to keep the existing default bucket
-  NetworkAccessType:
-    Type: String
-    AllowedValues:
-      - 'PublicInternetOnly'
-      - 'VpcOnly'
-    Description: Choose how SageMaker Studio accesses resources over the Network
-    Default: 'VpcOnly'
-  AuthMode:
-    Type: String
-    AllowedValues:
-      - 'IAM'
-      - 'SSO'
-    Description: The mode of authentication that members use to access the domain
-    Default: 'IAM'
-  SageMakerStudioStorageKMSKeyId:
-    Type: String
-    Description: SageMaker uses an AWS KMS key to encrypt your EFS and EBS file systems by default. To use a customer managed key, enter its key Id.
-    Default: ''
-  StartKernelGatewayApps:
-    Type: String
-    Description: Start the KernelGateway Apps (Data Science and Data Wrangler)
-    AllowedValues:
-      - 'YES'
-      - 'NO'
-    Default: 'NO'
 
 Conditions:
   CreateS3Bucket:
     !Equals [!Ref ShouldCreateBucketInputParameter, "True"]
-  SageMakerEFSKMSKeyCondition: !Not [ !Equals [ !Ref SageMakerStudioStorageKMSKeyId, ''] ]
-  KernelGatewayAppsCondition: !Equals [ !Ref StartKernelGatewayApps, 'YES' ]
     
 Resources:
   attachGateway:
@@ -200,7 +103,7 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Condition: CreateS3Bucket
     Properties:
-        BucketName: !Sub 'sagemaker-${AWS::Region}-${AWS::AccountId}-9999'
+        BucketName: !Sub 'sagemaker-${AWS::Region}-${AWS::AccountId}'
         
   instanceRole:
     Description: Instance Role for Sagemaker and FsxLustre
@@ -224,8 +127,6 @@ Resources:
         - 'arn:aws:iam::aws:policy/IAMFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonFSxFullAccess'
         - 'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess'
-        - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
-
       RoleName: "tf2-sm-ddp2"
     Type: "AWS::IAM::Role"
 
@@ -432,53 +333,6 @@ Resources:
       RoleArn: !GetAtt instanceRole.Arn
       VolumeSizeInGB: !Ref VolumeSize
       LifecycleConfigName: !GetAtt NotebookLifecycle.NotebookInstanceLifecycleConfigName
-
-  SageMakerStudioDomain:
-    Type: AWS::SageMaker::Domain
-    Properties: 
-      AppNetworkAccessType: !Ref NetworkAccessType
-      AuthMode: !Ref AuthMode
-      DefaultUserSettings: 
-          ExecutionRole: !GetAtt instanceRole.Arn
-          SecurityGroups: [!Ref instanceSecurityGroup]
-      DomainName: !Ref DomainName 
-      KmsKeyId: !If [ SageMakerEFSKMSKeyCondition, !Ref SageMakerStudioStorageKMSKeyId, !Ref 'AWS::NoValue' ]
-      SubnetIds: [!Ref privateSubnet]
-      VpcId: !Ref vpc
-
-  SageMakerUserProfile:
-    Type: AWS::SageMaker::UserProfile
-    Properties: 
-      DomainId: !GetAtt SageMakerStudioDomain.DomainId
-      UserProfileName: !Ref UserProfileName
-      UserSettings:
-        ExecutionRole: !GetAtt instanceRole.Arn
-        SecurityGroups: [!Ref instanceSecurityGroup]
-
-  JupyterApp:
-    Type: AWS::SageMaker::App
-    DependsOn: SageMakerUserProfile
-    Properties: 
-      AppName: default
-      AppType: JupyterServer
-      DomainId: !GetAtt SageMakerStudioDomain.DomainId
-      UserProfileName: !Ref UserProfileName
-
-  DataScienceApp:
-    Type: AWS::SageMaker::App
-    DependsOn: SageMakerUserProfile
-    Condition: KernelGatewayAppsCondition
-    Properties: 
-      AppName: instance-event-engine-datascience-ml-t3-medium
-      AppType: KernelGateway
-      DomainId: !GetAtt SageMakerStudioDomain.DomainId
-      ResourceSpec: 
-        InstanceType:  ml.t3.medium
-        SageMakerImageArn: !FindInMap
-          - RegionMap
-          - !Ref 'AWS::Region'
-          - datascience
-      UserProfileName: !Ref UserProfileName
   
   S3LinkedLustreFS:
     DependsOn:
