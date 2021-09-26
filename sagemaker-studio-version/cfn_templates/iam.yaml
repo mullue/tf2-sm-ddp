@@ -1,0 +1,120 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create IAM Roles for SageMaker Notebook Instance and KMS Key for Encrypting Notebook EBS Volume.
+
+Parameters:
+  ProjectName:
+    Type: String
+  KMSAlias:
+    Type: String
+    Default: sagemaker-anfw-kms
+
+Resources:
+  SageMakerExecutionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: SageMaker Notebook restricted access
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: CloudWatchLogsAccess
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DescribeLogStreams
+              - logs:PutLogEvents
+              - logs:GetLogEvents
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/sagemaker/*
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-stream:*
+          - Sid: CloudWatchMetricsAccess
+            Effect: Allow
+            Action:
+              - cloudwatch:GetMetricStatistics
+              - cloudwatch:ListMetrics
+              - cloudwatch:PutMetricData
+              - cloudwatch:GetMetricData
+              - cloudwatch:PutMetricAlarm
+              - cloudwatch:DescribeAlarms
+            Resource: '*'
+          - Sid: KMSAccess
+            Effect: Allow
+            Action:
+              - 'kms:CreateGrant'
+              - 'kms:Decrypt'
+              - 'kms:DescribeKey'
+              - 'kms:Encrypt'
+              - 'kms:GenerateDataKey'
+              - 'kms:ListAliases'
+            Resource: '*'
+          - Sid: S3Access
+            Effect: Allow
+            Action:
+              - s3:*
+            Resource: '*'
+          - Sid: FSxAccess
+            Effect: Allow
+            Action:
+              - fsx:*
+            Resource: '*'
+          - Sid: ECRAccess
+            Effect: Allow
+            Action:
+              - ecr:*
+            Resource: '*'
+          - Sid: PassRole
+            Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource: '*'
+            Condition:
+              StringEquals:
+                iam:PassedToService: sagemaker.amazonaws.com
+          - Sid: SageMakerAccess
+            Action:
+              - sagemaker:*
+            Resource: '*'
+            Effect: Allow
+          - Sid: SageMakerStudioSignedURLCreation
+            Action:
+              - sagemaker:CreateApp
+            Resource: '*'
+            Effect: Allow
+          - Sid: EC2Access
+            Effect: Allow
+            Action:
+              - ec2:CreateNetworkInterface
+              - ec2:CreateNetworkInterfacePermission
+              - ec2:DeleteNetworkInterface
+              - ec2:DeleteNetworkInterfacePermission
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeVpcs
+              - ec2:DescribeDhcpOptions
+              - ec2:DescribeSubnets
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeVpcEndpoints
+            Resource: '*'
+
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      RoleName: !Sub ${ProjectName}-${AWS::Region}-sagemaker-execution-role
+      ManagedPolicyArns:
+        - !Ref SageMakerExecutionPolicy
+#        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+
+
+Outputs:
+  ExecutionRoleArn:
+    Value: !GetAtt SageMakerExecutionRole.Arn

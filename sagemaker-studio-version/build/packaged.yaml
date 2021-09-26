@@ -1,0 +1,350 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Amazon SageMaker Studio secure deployment demo. The deployment creates
+  all necessary network infrastructure and SageMaker Studio domain.
+Parameters:
+  ProjectName:
+    Type: String
+    Default: sagemaker-studio-vpc-firewall
+  DomainName:
+    Description: SageMaker domain name
+    Type: String
+    Default: sagemaker-anfw-domain
+  UserProfileName:
+    Description: User profile name for the SageMaker domain
+    Type: String
+    Default: anfw-user-profile
+  VPCCIDR:
+    Type: String
+    Default: 10.2.0.0/16
+  FirewallSubnetCIDR:
+    Type: String
+    Default: 10.2.1.0/24
+  NATGatewaySubnetCIDR:
+    Type: String
+    Default: 10.2.2.0/24
+  SageMakerStudioSubnetCIDR:
+    Type: String
+    Default: 10.2.3.0/24
+  PublicS3Bucket:
+    Type: String
+    Default: s3://ee-assets-prod-us-east-1/modules/75e5dde6cf204eedb24191ad8240656f/v1/coco_dataset
+    Description: Public S3 bucket for coco dataset
+Resources:
+  IAM:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+      TemplateURL: https://s3.us-west-2.amazonaws.com/ddp-workshop-studio/sagemaker-studio-anfw/f75a1a57766ce280e1c9aad79986600a.template
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        ProjectName:
+          Ref: ProjectName
+        VPCCIDR:
+          Ref: VPCCIDR
+        FirewallSubnetCIDR:
+          Ref: FirewallSubnetCIDR
+        NATGatewaySubnetCIDR:
+          Ref: NATGatewaySubnetCIDR
+        SageMakerStudioSubnetCIDR:
+          Ref: SageMakerStudioSubnetCIDR
+      TemplateURL: https://s3.us-west-2.amazonaws.com/ddp-workshop-studio/sagemaker-studio-anfw/390c0e6a4c88113628f87b5616276137.template
+  SageMakerStudio:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        DomainName:
+          Fn::Sub: ${DomainName}-${AWS::Region}
+        UserProfileName:
+          Fn::Sub: ${UserProfileName}-${AWS::Region}
+        ProjectName:
+          Ref: ProjectName
+        VPCId:
+          Fn::GetAtt:
+          - VPC
+          - Outputs.VPCId
+        SageMakerStudioSubnetIds:
+          Fn::GetAtt:
+          - VPC
+          - Outputs.SageMakerStudioSubnetId
+        SageMakerSecurityGroupIds:
+          Fn::GetAtt:
+          - VPC
+          - Outputs.SageMakerSecurityGroupId
+        SageMakerExecutionRoleArn:
+          Fn::GetAtt:
+          - IAM
+          - Outputs.ExecutionRoleArn
+      TemplateURL: https://s3.us-west-2.amazonaws.com/ddp-workshop-studio/sagemaker-studio-anfw/d4209fa5a35acae092cfe503dcd0d211.template
+  S3LinkedLustreFS:
+    Type: AWS::FSx::FileSystem
+    Properties:
+      FileSystemType: LUSTRE
+      StorageCapacity: 1200
+      SubnetIds:
+      - Fn::GetAtt:
+        - VPC
+        - Outputs.SageMakerStudioSubnetId
+      SecurityGroupIds:
+      - Fn::GetAtt:
+        - VPC
+        - Outputs.SageMakerSecurityGroupId
+      Tags:
+      - Key: Name
+        Value: TF-DDP-Workshop
+      LustreConfiguration:
+        AutoImportPolicy: NEW
+        CopyTagsToBackups: true
+        DeploymentType: PERSISTENT_1
+        PerUnitStorageThroughput: 200
+        DataCompressionType: NONE
+        ImportPath:
+          Fn::Sub: s3://sagemaker-${AWS::Region}-${AWS::AccountId}
+        ExportPath:
+          Fn::Sub: s3://sagemaker-${AWS::Region}-${AWS::AccountId}/.
+  Cloud9Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+            - ssm.amazonaws.com
+            - s3.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AdministratorAccess
+      Path: /
+  Cloud9InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+      - Ref: Cloud9Role
+  Cloud9:
+    Type: AWS::Cloud9::EnvironmentEC2
+    DependsOn:
+    - Cloud9BootstrapAssociation
+    Properties:
+      Name:
+        Ref: AWS::StackName
+      Description: Cloud9 IDE
+      AutomaticStopTimeMinutes: 120
+      ImageId: amazonlinux-2-x86_64
+      InstanceType: t3.medium
+      Tags:
+      - Key: SSMBootstrap
+        Value:
+          Fn::Sub:
+          - ${AWS::StackName}-${RANDOM}
+          - RANDOM:
+              Fn::Select:
+              - 0
+              - Fn::Split:
+                - '-'
+                - Fn::Select:
+                  - 2
+                  - Fn::Split:
+                    - /
+                    - Ref: AWS::StackId
+  Cloud9BootstrapAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      Name:
+        Ref: Cloud9SSMDocument
+      Targets:
+      - Key: tag:SSMBootstrap
+        Values:
+        - Fn::Sub:
+          - ${AWS::StackName}-${RANDOM}
+          - RANDOM:
+              Fn::Select:
+              - 0
+              - Fn::Split:
+                - '-'
+                - Fn::Select:
+                  - 2
+                  - Fn::Split:
+                    - /
+                    - Ref: AWS::StackId
+  Cloud9SSMDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentType: Command
+      Content:
+        schemaVersion: '2.2'
+        description: Bootstrap Cloud9 Instance
+        mainSteps:
+        - action: aws:runShellScript
+          name: C9bootstrap
+          inputs:
+            runCommand:
+            - '#!/bin/bash'
+            - Fn::Sub: aws s3 sync ${PublicS3Bucket}/train s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/train/
+            - Fn::Sub: aws s3 sync ${PublicS3Bucket}/model s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/model/
+            - Fn::Sub: aws s3 sync ${PublicS3Bucket}/annotations s3://sagemaker-${AWS::Region}-${AWS::AccountId}/coco_dataset/annotations/
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName:
+          Fn::Join:
+          - ''
+          - - LambdaExecutionRole-
+            - Ref: AWS::Region
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - cloudformation:DescribeStacks
+            - cloudformation:DescribeStackEvents
+            - cloudformation:DescribeStackResource
+            - cloudformation:DescribeStackResources
+            - ec2:DescribeInstances
+            - ec2:AssociateIamInstanceProfile
+            - ec2:ModifyInstanceAttribute
+            - ec2:ReplaceIamInstanceProfileAssociation
+            - iam:ListInstanceProfiles
+            - iam:PassRole
+            Resource: '*'
+  Cloud9BootstrapInstanceLambda:
+    Type: Custom::Cloud9BootstrapInstanceLambda
+    DependsOn:
+    - LambdaExecutionRole
+    - LogGroupCloud9BootstrapInstanceLambdaFunction
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+        - Cloud9BootstrapInstanceLambdaFunction
+        - Arn
+      REGION:
+        Ref: AWS::Region
+      StackName:
+        Ref: AWS::StackName
+      EnvironmentId:
+        Ref: Cloud9
+      LabIdeInstanceProfileName:
+        Ref: Cloud9InstanceProfile
+      LabIdeInstanceProfileArn:
+        Fn::GetAtt:
+        - Cloud9InstanceProfile
+        - Arn
+  Cloud9BootstrapInstanceLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      Runtime: python3.6
+      MemorySize: 256
+      Timeout: 600
+      Code:
+        ZipFile: "from __future__ import print_function\nimport boto3\nimport json\n\
+          import os\nimport time\nimport traceback\nimport cfnresponse\n\ndef lambda_handler(event,\
+          \ context):\n    # logger.info('event: {}'.format(event))\n    # logger.info('context:\
+          \ {}'.format(context))\n    responseData = {}\n\n    if event['RequestType']\
+          \ == 'Create':\n        try:\n            # Open AWS clients\n         \
+          \   ec2 = boto3.client('ec2')\n\n            # Get the InstanceId of the\
+          \ Cloud9 IDE\n            instance = ec2.describe_instances(Filters=[{'Name':\
+          \ 'tag:Name','Values': ['aws-cloud9-'+event['ResourceProperties']['StackName']+'-'+event['ResourceProperties']['EnvironmentId']]}])['Reservations'][0]['Instances'][0]\n\
+          \            # logger.info('instance: {}'.format(instance))\n\n        \
+          \    # Create the IamInstanceProfile request object\n            iam_instance_profile\
+          \ = {\n                'Arn': event['ResourceProperties']['LabIdeInstanceProfileArn'],\n\
+          \                'Name': event['ResourceProperties']['LabIdeInstanceProfileName']\n\
+          \            }\n            # logger.info('iam_instance_profile: {}'.format(iam_instance_profile))\n\
+          \n            # Wait for Instance to become ready before adding Role\n \
+          \           instance_state = instance['State']['Name']\n            # logger.info('instance_state:\
+          \ {}'.format(instance_state))\n            while instance_state != 'running':\n\
+          \                time.sleep(5)\n                instance_state = ec2.describe_instances(InstanceIds=[instance['InstanceId']])\n\
+          \                # logger.info('instance_state: {}'.format(instance_state))\n\
+          \n            # attach instance profile\n            response = ec2.associate_iam_instance_profile(IamInstanceProfile=iam_instance_profile,\
+          \ InstanceId=instance['InstanceId'])\n            # logger.info('response\
+          \ - associate_iam_instance_profile: {}'.format(response))\n            r_ec2\
+          \ = boto3.resource('ec2')\n\n            responseData = {'Success': 'Started\
+          \ bootstrapping for instance: '+instance['InstanceId']}\n            cfnresponse.send(event,\
+          \ context, cfnresponse.SUCCESS, responseData, 'CustomResourcePhysicalID')\n\
+          \            \n        except Exception as e:\n            # logger.error(e,\
+          \ exc_info=True)\n            responseData = {'Error': traceback.format_exc(e)}\n\
+          \            cfnresponse.send(event, context, cfnresponse.FAILED, responseData,\
+          \ 'CustomResourcePhysicalID')\n    else:\n        cfnresponse.send(event,\
+          \ context, cfnresponse.SUCCESS, responseData)\n"
+  LogGroupCloud9BootstrapInstanceLambdaFunction:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${Cloud9BootstrapInstanceLambdaFunction}
+      RetentionInDays: 7
+Outputs:
+  VPCId:
+    Description: The ID of VPC where SageMaker Studio will reside
+    Value:
+      Fn::GetAtt:
+      - VPC
+      - Outputs.VPCId
+  S3VPCEndpointId:
+    Description: The ID of the S3 VPC endpoint
+    Value:
+      Fn::GetAtt:
+      - VPC
+      - Outputs.S3VPCEndpointId
+  SageMakerStudioSubnetId:
+    Description: The ID of the SageMaker subnet
+    Value:
+      Fn::GetAtt:
+      - VPC
+      - Outputs.SageMakerStudioSubnetId
+  SageMakerStudioSecurityGroupId:
+    Description: The ID the SageMaker security group
+    Value:
+      Fn::GetAtt:
+      - VPC
+      - Outputs.SageMakerSecurityGroupId
+  SageMakerExecutionRoleArn:
+    Description: IAM Execution role for SageMaker Studio and SageMaker notebooks
+    Value:
+      Fn::GetAtt:
+      - IAM
+      - Outputs.ExecutionRoleArn
+  SageMakerStudioDomainId:
+    Description: SageMaker Studio domain id
+    Value:
+      Fn::GetAtt:
+      - SageMakerStudio
+      - Outputs.SageMakerStudioDomainId
+  UserProfileName:
+    Description: SageMaker user profile name
+    Value:
+      Fn::GetAtt:
+      - SageMakerStudio
+      - Outputs.UserProfileName
+  FileSystemId:
+    Description: FSx Lustre FS ID
+    Value:
+      Ref: S3LinkedLustreFS

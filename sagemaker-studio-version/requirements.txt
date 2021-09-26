@@ -1,0 +1,10 @@
+Cython
+matplotlib
+opencv-python-headless
+mpi4py
+Pillow
+pytest
+pyyaml
+git+https://github.com/NVIDIA/cocoapi#egg=pycocotools&subdirectory=PythonAPI
+git+https://github.com/NVIDIA/dllogger
+#tensorflow-io
